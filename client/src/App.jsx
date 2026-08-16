@@ -9,6 +9,8 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ChatPage from './pages/ChatPage';
+import DashboardPage from './pages/DashboardPage';
+import DocumentPage from './pages/DocumentPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -51,7 +53,10 @@ const AppRoutes = () => (
     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
     {/* Protected */}
-    <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+    <Route path="/document/:id" element={<ProtectedRoute><DocumentPage /></ProtectedRoute>} />
+    <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 

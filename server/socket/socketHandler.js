@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const { verifySocketToken } = require('../middleware/auth');
+const setupDocumentSocket = require('./documentSocketHandler');
 
 // Track online users: userId -> socketId
 const onlineUsers = new Map();
@@ -31,6 +32,9 @@ const setupSocket = (io) => {
 
     // Broadcast to all that this user came online
     socket.broadcast.emit('user-online', { userId });
+
+    // ── Wire up document collaboration events ──────────────────────────────────
+    setupDocumentSocket(io, socket);
 
     // ── Join conversation room ──────────────────────────────────────────────
     socket.on('join-chat', ({ conversationId }) => {

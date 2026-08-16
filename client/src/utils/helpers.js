@@ -107,6 +107,33 @@ export const getMessagePreview = (message) => {
   return truncateText(message.content, 45);
 };
 
+// ─── Document helpers ──────────────────────────────────────────────────────────
+export const formatDate = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isToday(d)) return `Today at ${format(d, 'HH:mm')}`;
+  if (isYesterday(d)) return `Yesterday at ${format(d, 'HH:mm')}`;
+  return format(d, 'MMM d, yyyy');
+};
+
+export const formatFullDate = (date) => {
+  if (!date) return '';
+  return format(new Date(date), 'MMM d, yyyy HH:mm');
+};
+
+export const truncate = (text, maxLength = 120) => {
+  if (!text) return '';
+  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
+};
+
+export const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+// Alias — some components import generateUserColor instead of generateAvatarColor
+export const generateUserColor = generateAvatarColor;
+
 // ─── Misc ─────────────────────────────────────────────────────────────────────
 export const isImageFile = (file) => file?.type?.startsWith('image/');
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 const {
   getDocuments,
   createDocument,
@@ -13,7 +13,7 @@ const {
   restoreVersion,
 } = require('../controllers/documentController');
 
-router.use(auth);
+router.use(protect);
 
 router.get('/', getDocuments);
 router.post('/', createDocument);

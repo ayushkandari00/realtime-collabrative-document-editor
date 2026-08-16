@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const setupSocket = require('./socket/socketHandler');
@@ -59,6 +60,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/conversations', conversationRoutes);
+app.use('/api/documents', documentRoutes);
 
 // ── Health Check ───────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,6 @@
 # CollabDocs — Real-Time Collaborative Document Editor
 
-> A production-quality Google Docs-style collaborative editor built for internship submission.
+> A production-quality Google Docs-style collaborative editor 
 
 ## ✨ Features
 

@@ -1,8 +1,8 @@
-import { getInitials, getAvatarColor } from '../utils/helpers';
+import { getInitials, generateAvatarColor } from '../utils/helpers';
 
 const UserAvatar = ({ name = '', size = 'md', showOnline = false, isOnline = false, className = '' }) => {
   const initials = getInitials(name);
-  const gradient = getAvatarColor(name);
+  const bgColor = generateAvatarColor(name);
 
   const sizes = {
     xs: 'w-6 h-6 text-[10px]',
@@ -23,7 +23,8 @@ const UserAvatar = ({ name = '', size = 'md', showOnline = false, isOnline = fal
   return (
     <div className={`relative inline-flex shrink-0 ${className}`}>
       <div
-        className={`${sizes[size]} rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white dark:ring-slate-900`}
+        className={`${sizes[size]} rounded-full flex items-center justify-center text-white font-semibold shadow-sm ring-2 ring-white dark:ring-slate-900`}
+        style={{ background: bgColor }}
         title={name}
       >
         {initials}
