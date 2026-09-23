@@ -20,14 +20,14 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <div className="min-h-screen flex items-center justify-center bg-ink-50 dark:bg-ink-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center animate-pulse shadow-lg shadow-indigo-500/30">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center animate-pulse">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400 font-medium">Loading ChatApp…</p>
+          <p className="text-sm text-ink-400 font-medium">Cowrite</p>
         </div>
       </div>
     );
@@ -80,17 +80,17 @@ function App() {
                   duration: 3500,
                   style: {
                     background: 'var(--toast-bg, #fff)',
-                    color: 'var(--toast-color, #0f172a)',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(99,102,241,0.12)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    color: 'var(--toast-color, #1c1917)',
+                    borderRadius: '10px',
+                    border: '1px solid var(--toast-border, rgba(0,0,0,0.08))',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
                     fontFamily: 'Inter, sans-serif',
                     fontSize: '13px',
                     fontWeight: '500',
-                    padding: '12px 16px',
+                    padding: '10px 14px',
                   },
-                  success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
-                  error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+                  success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+                  error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
                 }}
               />
             </ChatProvider>

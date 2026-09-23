@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Share2, History, CheckCircle, Loader2, WifiOff,
-  Wifi, Users, Eye, Edit3, Download, MoreVertical, X
+  ArrowLeft, Share2, History, CheckCircle2, Loader2, WifiOff,
+  Wifi, Users, Eye, Edit3, Download, MoreHorizontal, X, PenLine
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -17,10 +17,10 @@ import { formatDate } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const SAVE_STATUS = {
-  IDLE: 'idle',
+  IDLE:   'idle',
   SAVING: 'saving',
-  SAVED: 'saved',
-  ERROR: 'error',
+  SAVED:  'saved',
+  ERROR:  'error',
 };
 
 const DocumentPage = () => {
@@ -44,14 +44,16 @@ const DocumentPage = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
-  const typingTimer = useRef(null);
-  const isSocketUpdate = useRef(false);
+  const typingTimer      = useRef(null);
+  const isSocketUpdate   = useRef(false);
   const savedStatusTimer = useRef(null);
+  const moreMenuRef      = useRef(null);
 
   const isEditable = permission === 'owner' || permission === 'editor';
 
-  // ── Fetch document ─────────────────────────────────────────────
+  // ── Fetch document ─────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchDoc = async () => {
       try {
@@ -72,7 +74,7 @@ const DocumentPage = () => {
     fetchDoc();
   }, [id]);
 
-  // ── Socket setup ───────────────────────────────────────────────
+  // ── Socket setup ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!socket || !id || loading) return;
 
@@ -91,9 +93,7 @@ const DocumentPage = () => {
       setTimeout(() => { isSocketUpdate.current = false; }, 100);
     });
 
-    socket.on('title-updated', ({ title: newTitle }) => {
-      setTitle(newTitle);
-    });
+    socket.on('title-updated', ({ title: newTitle }) => setTitle(newTitle));
 
     socket.on('active-users', (users) => {
       setActiveUsers(users.filter((u) => u.userId?.toString() !== user._id?.toString()));
@@ -102,7 +102,7 @@ const DocumentPage = () => {
     socket.on('user-joined', ({ user: joinedUser, activeUsers: users }) => {
       setActiveUsers(users.filter((u) => u.userId?.toString() !== user._id?.toString()));
       addActivity({ type: 'joined', name: joinedUser.name, timestamp: new Date() });
-      toast(`${joinedUser.name} joined the document`, { icon: '👋', duration: 2500 });
+      toast(`${joinedUser.name} joined`, { icon: '👋', duration: 2000 });
     });
 
     socket.on('user-left', ({ name, activeUsers: users }) => {
@@ -115,9 +115,8 @@ const DocumentPage = () => {
       setTypingUsers((prev) => {
         if (isTyping) {
           return prev.find((u) => u.userId === userId) ? prev : [...prev, { userId, name }];
-        } else {
-          return prev.filter((u) => u.userId !== userId);
         }
+        return prev.filter((u) => u.userId !== userId);
       });
     });
 
@@ -125,24 +124,15 @@ const DocumentPage = () => {
       setSaveStatus(SAVE_STATUS.SAVED);
       addActivity({ type: 'saved', timestamp: savedAt });
       if (savedStatusTimer.current) clearTimeout(savedStatusTimer.current);
-      savedStatusTimer.current = setTimeout(() => setSaveStatus(SAVE_STATUS.IDLE), 3000);
+      savedStatusTimer.current = setTimeout(() => setSaveStatus(SAVE_STATUS.IDLE), 4000);
     });
 
-    socket.on('error', ({ message }) => {
-      toast.error(message);
-    });
+    socket.on('error', ({ message }) => toast.error(message));
 
     return () => {
       socket.emit('leave-document', { documentId: id });
-      socket.off('load-document');
-      socket.off('receive-changes');
-      socket.off('title-updated');
-      socket.off('active-users');
-      socket.off('user-joined');
-      socket.off('user-left');
-      socket.off('user-typing');
-      socket.off('document-saved');
-      socket.off('error');
+      ['load-document','receive-changes','title-updated','active-users',
+       'user-joined','user-left','user-typing','document-saved','error'].forEach((e) => socket.off(e));
     };
   }, [socket, id, loading, user._id]);
 
@@ -150,7 +140,7 @@ const DocumentPage = () => {
     setActivityEvents((prev) => [...prev.slice(-49), event]);
   };
 
-  // ── Content change handler ─────────────────────────────────────
+  // ── Content change ─────────────────────────────────────────────────────────
   const handleContentChange = useCallback((html, stats) => {
     if (isSocketUpdate.current) return;
     setContent(html);
@@ -158,11 +148,7 @@ const DocumentPage = () => {
       setWordCount(stats.words);
       setCharCount(stats.characters);
     }
-
-    // Broadcast to other users
     socket?.emit('send-changes', { documentId: id, content: html });
-
-    // Typing indicator
     socket?.emit('typing', { documentId: id, isTyping: true });
     if (typingTimer.current) clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
@@ -170,13 +156,13 @@ const DocumentPage = () => {
     }, 1500);
   }, [socket, id]);
 
-  // ── Title change handler ───────────────────────────────────────
+  // ── Title change ───────────────────────────────────────────────────────────
   const handleTitleChange = (newTitle) => {
     setTitle(newTitle);
     socket?.emit('title-change', { documentId: id, title: newTitle });
   };
 
-  // ── Auto-save ──────────────────────────────────────────────────
+  // ── Auto-save ──────────────────────────────────────────────────────────────
   const { forceSave } = useAutoSave({
     documentId: id,
     content,
@@ -186,26 +172,23 @@ const DocumentPage = () => {
     enabled: isEditable,
     onSaving: () => {
       setSaveStatus(SAVE_STATUS.SAVING);
-      // Also save via socket
       socket?.emit('save-document', { documentId: id, content, title, wordCount, characterCount: charCount });
     },
     onSaved: () => {
       setSaveStatus(SAVE_STATUS.SAVED);
       addActivity({ type: 'saved', timestamp: new Date() });
       if (savedStatusTimer.current) clearTimeout(savedStatusTimer.current);
-      savedStatusTimer.current = setTimeout(() => setSaveStatus(SAVE_STATUS.IDLE), 3000);
+      savedStatusTimer.current = setTimeout(() => setSaveStatus(SAVE_STATUS.IDLE), 4000);
     },
   });
 
-  // ── Export PDF ─────────────────────────────────────────────────
+  // ── PDF export ─────────────────────────────────────────────────────────────
   const handleExportPDF = async () => {
+    setShowMoreMenu(false);
     try {
       const { default: html2pdf } = await import('html2pdf.js');
       const element = window.document.querySelector('.ProseMirror');
-      if (!element) {
-        toast.error('No content to export');
-        return;
-      }
+      if (!element) { toast.error('No content to export'); return; }
       html2pdf()
         .set({
           margin: [10, 15, 10, 15],
@@ -221,27 +204,47 @@ const DocumentPage = () => {
     }
   };
 
+  // ── Close more menu on outside click ──────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    };
+    window.document.addEventListener('mousedown', handler);
+    return () => window.document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // ── Save status indicator ──────────────────────────────────────────────────
   const SaveStatusIndicator = () => {
+    if (!connected) {
+      return (
+        <span className="flex items-center gap-1.5 text-xs text-amber-500 font-medium">
+          <WifiOff size={11} />
+          Offline
+        </span>
+      );
+    }
     if (saveStatus === SAVE_STATUS.SAVING) {
       return (
-        <span className="flex items-center gap-1.5 text-xs text-slate-400">
-          <Loader2 size={12} className="animate-spin text-primary-500" />
-          Saving...
+        <span className="flex items-center gap-1.5 text-xs text-ink-400">
+          <Loader2 size={11} className="animate-spin text-primary-500" />
+          Saving…
         </span>
       );
     }
     if (saveStatus === SAVE_STATUS.SAVED) {
       return (
-        <span className="flex items-center gap-1.5 text-xs text-emerald-500">
-          <CheckCircle size={12} />
-          Saved
+        <span className="flex items-center gap-1.5 text-xs text-emerald-500 animate-fade-in">
+          <CheckCircle2 size={11} />
+          Saved just now
         </span>
       );
     }
     if (document?.updatedAt) {
       return (
-        <span className="text-xs text-slate-400">
-          Last edited {formatDate(document.updatedAt)}
+        <span className="text-xs text-ink-400">
+          Edited {formatDate(document.updatedAt)}
         </span>
       );
     }
@@ -250,27 +253,32 @@ const DocumentPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-ink-50 dark:bg-ink-950">
         <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-primary-500 mx-auto mb-4" />
-          <p className="text-slate-400">Loading document...</p>
+          <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <PenLine size={18} className="text-white" strokeWidth={2.5} />
+          </div>
+          <p className="text-sm text-ink-400">Loading document…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden">
-      {/* Top Navbar */}
-      <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3 shrink-0 z-20">
+    <div className="h-screen flex flex-col bg-ink-50 dark:bg-ink-950 overflow-hidden">
+      {/* ── Top navbar ──────────────────────────────────────────────────────── */}
+      <header className="bg-white dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 px-4 py-2.5 flex items-center gap-3 shrink-0 z-20">
         {/* Back */}
         <button
           onClick={() => navigate('/dashboard')}
-          className="btn-ghost p-2 rounded-xl"
+          className="btn-icon"
           title="Back to dashboard"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={16} />
         </button>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-ink-200 dark:bg-ink-700" />
 
         {/* Title */}
         <div className="flex-1 min-w-0">
@@ -282,7 +290,7 @@ const DocumentPage = () => {
               onBlur={() => setEditingTitle(false)}
               onKeyDown={(e) => e.key === 'Enter' && setEditingTitle(false)}
               autoFocus
-              className="text-lg font-semibold bg-transparent border-b-2 border-primary-500 outline-none text-slate-900 dark:text-slate-100 w-full max-w-md"
+              className="text-base font-semibold bg-transparent border-b-2 border-primary-500 outline-none text-ink-900 dark:text-ink-100 w-full max-w-md"
             />
           ) : (
             <button
@@ -290,7 +298,7 @@ const DocumentPage = () => {
               className={`text-left group ${isEditable ? 'hover:text-primary-600 dark:hover:text-primary-400 cursor-text' : 'cursor-default'}`}
               title={isEditable ? 'Click to rename' : ''}
             >
-              <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate max-w-sm">
+              <h1 className="text-base font-semibold text-ink-900 dark:text-ink-100 truncate max-w-sm">
                 {title || 'Untitled Document'}
               </h1>
             </button>
@@ -302,52 +310,45 @@ const DocumentPage = () => {
           <SaveStatusIndicator />
 
           {/* Permission badge */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+          <div className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
             isEditable
               ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+              : 'bg-ink-100 dark:bg-ink-800 text-ink-500 dark:text-ink-400'
           }`}>
-            {isEditable ? <Edit3 size={11} /> : <Eye size={11} />}
+            {isEditable ? <Edit3 size={10} /> : <Eye size={10} />}
             {permission}
           </div>
 
-          {/* Connection status */}
-          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-            connected
-              ? 'text-emerald-500'
-              : 'text-red-400'
-          }`}>
-            {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-            <span className="hidden sm:inline">{connected ? 'Live' : 'Offline'}</span>
-          </div>
+          {/* Connection dot */}
+          <div className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} title={connected ? 'Connected' : 'Disconnected'} />
 
-          {/* Active users avatars */}
+          {/* Active user avatars */}
           {activeUsers.length > 0 && (
             <div className="flex -space-x-2 items-center">
-              {activeUsers.slice(0, 4).map((u, i) => (
+              {activeUsers.slice(0, 3).map((u, i) => (
                 <div
                   key={u.socketId || i}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white dark:ring-slate-950"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-ink-950"
                   style={{ backgroundColor: u.color }}
                   title={u.name}
                 >
                   {u.name?.charAt(0)?.toUpperCase()}
                 </div>
               ))}
-              {activeUsers.length > 4 && (
-                <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-bold ring-2 ring-white dark:ring-slate-950">
-                  +{activeUsers.length - 4}
+              {activeUsers.length > 3 && (
+                <div className="w-7 h-7 rounded-full bg-ink-200 dark:bg-ink-700 flex items-center justify-center text-ink-600 dark:text-ink-300 text-[10px] font-bold ring-2 ring-white dark:ring-ink-950">
+                  +{activeUsers.length - 3}
                 </div>
               )}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-1.5">
+          {/* Primary actions */}
+          <div className="flex items-center gap-1">
             {isEditable && (
               <button
                 onClick={() => forceSave()}
-                className="btn-ghost px-3 py-2 text-xs font-semibold"
+                className="btn-ghost px-2.5 py-1.5 text-xs font-semibold hidden sm:flex"
                 title="Force save (Ctrl+S)"
               >
                 Save
@@ -355,52 +356,68 @@ const DocumentPage = () => {
             )}
             <button
               onClick={() => setShowShare(true)}
-              className="btn-primary py-2 px-3"
-              title="Share document"
+              className="btn-primary py-1.5 px-3 text-sm"
             >
-              <Share2 size={15} />
-              <span className="hidden sm:inline text-sm">Share</span>
+              <Share2 size={13} />
+              <span className="hidden sm:inline">Share</span>
             </button>
-            <button
-              onClick={() => setShowHistory(true)}
-              className="btn-secondary py-2 px-3"
-              title="Version history"
-            >
-              <History size={15} />
-            </button>
-            <button
-              onClick={handleExportPDF}
-              className="btn-secondary py-2 px-3"
-              title="Export as PDF"
-            >
-              <Download size={15} />
-            </button>
+
+            {/* Collaborators panel toggle */}
             <button
               onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-              className={`btn-ghost p-2 ${rightSidebarOpen ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : ''}`}
-              title="Toggle sidebar"
+              className={`btn-icon ${rightSidebarOpen ? 'bg-ink-100 dark:bg-ink-800 text-primary-600 dark:text-primary-400' : ''}`}
+              title="Collaborators"
             >
-              <Users size={16} />
+              <Users size={15} />
             </button>
+
+            {/* More actions (History + Export) */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                onClick={() => setShowMoreMenu((v) => !v)}
+                className="btn-icon"
+                title="More actions"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+              {showMoreMenu && (
+                <div className="context-menu right-0 top-9 w-44">
+                  <button
+                    onClick={() => { setShowHistory(true); setShowMoreMenu(false); }}
+                    className="context-menu-item w-full text-left"
+                  >
+                    <History size={14} />
+                    Version History
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="context-menu-item w-full text-left"
+                  >
+                    <Download size={14} />
+                    Export PDF
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Typing indicator */}
+      {/* ── Typing indicator ────────────────────────────────────────────────── */}
       {typingUsers.length > 0 && (
-        <div className="bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800 px-6 py-1.5 flex items-center gap-2">
-          <div className="flex gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+        <div className="bg-white dark:bg-ink-950 border-b border-ink-100 dark:border-ink-800 px-6 py-1 flex items-center gap-2">
+          <div className="flex gap-0.5">
+            <span className="typing-dot bg-primary-400" />
+            <span className="typing-dot bg-primary-400" />
+            <span className="typing-dot bg-primary-400" />
           </div>
-          <span className="text-xs text-primary-600 dark:text-primary-400 font-medium">
-            {typingUsers.map((u) => u.name).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+          <span className="text-xs text-ink-500 dark:text-ink-400">
+            {typingUsers.map((u) => u.name).join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing
           </span>
         </div>
       )}
 
-      {/* Body */}
+      {/* ── Body ────────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor area */}
         <div className="flex-1 overflow-hidden p-4">
@@ -408,53 +425,51 @@ const DocumentPage = () => {
             content={content}
             onChange={handleContentChange}
             editable={isEditable}
-            placeholder="Start writing your document..."
+            placeholder="Start writing your document…"
           />
         </div>
 
         {/* Right sidebar */}
         {rightSidebarOpen && (
-          <div className="w-72 border-l border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 overflow-y-auto p-4 space-y-4 shrink-0 animate-slide-in">
-            <CollaboratorsList activeUsers={activeUsers} connected={connected} />
-            <ActivityLog events={activityEvents} />
+          <div className="w-64 border-l border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 overflow-y-auto flex flex-col shrink-0 animate-slide-in">
+            {/* Sidebar header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-ink-100 dark:border-ink-800">
+              <span className="text-xs font-semibold text-ink-500 dark:text-ink-400 uppercase tracking-wider">Panel</span>
+              <button onClick={() => setRightSidebarOpen(false)} className="btn-icon w-6 h-6 text-ink-400">
+                <X size={13} />
+              </button>
+            </div>
 
-            {/* Document info */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3">Document Info</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Words</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{wordCount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Characters</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">{charCount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Owner</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[120px]">
-                    {document?.owner?.name || 'Unknown'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Last edited</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {formatDate(document?.updatedAt)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Your role</span>
-                  <span className={`font-semibold capitalize ${
-                    isEditable ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
-                  }`}>{permission}</span>
-                </div>
+            <div className="flex-1 p-4 space-y-4">
+              <CollaboratorsList activeUsers={activeUsers} connected={connected} />
+              <ActivityLog events={activityEvents} />
+
+              {/* Document info */}
+              <div className="rounded-xl border border-ink-100 dark:border-ink-800 p-4 bg-ink-50 dark:bg-ink-900">
+                <h3 className="text-xs font-semibold text-ink-500 dark:text-ink-400 uppercase tracking-wider mb-3">Info</h3>
+                <dl className="space-y-2">
+                  {[
+                    { label: 'Words',      value: wordCount.toLocaleString() },
+                    { label: 'Characters', value: charCount.toLocaleString() },
+                    { label: 'Owner',      value: document?.owner?.name || 'Unknown' },
+                    { label: 'Last edited',value: formatDate(document?.updatedAt) },
+                    { label: 'Your role',  value: permission, highlight: isEditable },
+                  ].map(({ label, value, highlight }) => (
+                    <div key={label} className="flex justify-between text-xs">
+                      <dt className="text-ink-500">{label}</dt>
+                      <dd className={`font-medium truncate max-w-[100px] text-right ${
+                        highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-700 dark:text-ink-300'
+                      }`}>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
       {showShare && document && (
         <ShareModal
           document={document}

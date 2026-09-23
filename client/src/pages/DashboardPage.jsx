@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, LayoutGrid, List, FileText, Loader2, RefreshCw, Filter } from 'lucide-react';
+import { Search, Plus, LayoutGrid, List, FileText, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import DocumentCard from '../components/DocumentCard';
@@ -56,12 +56,8 @@ const DashboardPage = () => {
     }
   }, [search, docType, page]);
 
-  // Initial load + when type/search changes
-  useEffect(() => {
-    fetchDocuments(true);
-  }, [docType, search]);
+  useEffect(() => { fetchDocuments(true); }, [docType, search]);
 
-  // Infinite scroll observer
   useEffect(() => {
     if (!loadMoreRef.current) return;
     observerRef.current = new IntersectionObserver(
@@ -77,16 +73,11 @@ const DashboardPage = () => {
     return () => observerRef.current?.disconnect();
   }, [hasMore, loadingMore]);
 
-  // Load more when page changes
-  useEffect(() => {
-    if (page > 1) fetchDocuments(false);
-  }, [page]);
+  useEffect(() => { if (page > 1) fetchDocuments(false); }, [page]);
 
   const handleSearch = (value) => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      setSearch(value);
-    }, 400);
+    searchTimer.current = setTimeout(() => setSearch(value), 400);
   };
 
   const handleDelete = async (docId) => {
@@ -113,79 +104,88 @@ const DashboardPage = () => {
     }
   };
 
-  const typeLabel = { all: 'All Documents', owned: 'My Documents', shared: 'Shared with Me' };
+  const typeLabel = {
+    all:    'All Documents',
+    owned:  'My Documents',
+    shared: 'Shared with Me',
+  };
+
+  const firstName = user?.name?.split(' ')[0] || 'there';
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden">
+    <div className="flex h-screen bg-ink-50 dark:bg-ink-950 overflow-hidden">
       <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
 
-      {/* Main */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center gap-4 shrink-0">
+        <header className="bg-white dark:bg-ink-950 border-b border-ink-200 dark:border-ink-800 px-6 py-3.5 flex items-center gap-4 shrink-0">
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            <h1 className="text-base font-semibold text-ink-900 dark:text-ink-100">
               {typeLabel[docType] || 'Documents'}
             </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-ink-400 mt-0.5">
               {total} document{total !== 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Search */}
-          <div className="relative w-72">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="relative w-64">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
             <input
               type="text"
-              placeholder="Search documents..."
+              placeholder="Search documents…"
               onChange={(e) => handleSearch(e.target.value)}
-              className="input-field pl-10 py-2 text-sm"
+              className="input-field pl-9 py-2 text-sm"
             />
           </div>
 
           {/* View toggle */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+          <div className="flex items-center gap-0.5 bg-ink-100 dark:bg-ink-800 rounded-lg p-0.5">
             <button
               onClick={() => setView('grid')}
-              className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-400' : 'text-slate-500'}`}
+              className={`p-1.5 rounded-md transition-all ${view === 'grid'
+                ? 'bg-white dark:bg-ink-700 shadow-sm text-primary-600 dark:text-primary-400'
+                : 'text-ink-500'}`}
               title="Grid view"
             >
-              <LayoutGrid size={15} />
+              <LayoutGrid size={14} />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-400' : 'text-slate-500'}`}
+              className={`p-1.5 rounded-md transition-all ${view === 'list'
+                ? 'bg-white dark:bg-ink-700 shadow-sm text-primary-600 dark:text-primary-400'
+                : 'text-ink-500'}`}
               title="List view"
             >
-              <List size={15} />
+              <List size={14} />
             </button>
           </div>
 
           <button onClick={handleCreate} disabled={creating} className="btn-primary">
-            {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {creating ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
             New
           </button>
         </header>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Welcome banner (first time / empty) */}
+          {/* Empty — no documents */}
           {!loading && documents.length === 0 && !search && (
             <div className="text-center py-20 animate-fade-in">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-100 to-indigo-100 dark:from-primary-900/40 dark:to-indigo-900/40 flex items-center justify-center mx-auto mb-6">
-                <FileText size={40} className="text-primary-500" />
+              <div className="w-16 h-16 rounded-2xl bg-ink-100 dark:bg-ink-800 flex items-center justify-center mx-auto mb-5">
+                <FileText size={28} className="text-ink-400 dark:text-ink-500" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">
-                {docType === 'shared' ? 'No shared documents' : 'Create your first document'}
+              <h2 className="text-lg font-semibold text-ink-800 dark:text-ink-200 mb-1.5">
+                {docType === 'shared' ? 'No shared documents yet' : 'No documents yet'}
               </h2>
-              <p className="text-slate-400 mb-8 max-w-sm mx-auto">
+              <p className="text-sm text-ink-400 mb-7 max-w-xs mx-auto leading-relaxed">
                 {docType === 'shared'
-                  ? "Documents shared with you will appear here."
-                  : "Start writing, collaborate in real-time, and keep all your work in one place."}
+                  ? 'Documents shared with you will appear here.'
+                  : `Hi ${firstName}! Create your first document and invite others to write with you.`}
               </p>
               {docType !== 'shared' && (
                 <button onClick={handleCreate} className="btn-primary">
-                  <Plus size={18} />
+                  <Plus size={16} />
                   Create Document
                 </button>
               )}
@@ -195,38 +195,36 @@ const DashboardPage = () => {
           {/* No search results */}
           {!loading && documents.length === 0 && search && (
             <div className="text-center py-20">
-              <Search size={40} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-2">No results found</h2>
-              <p className="text-sm text-slate-400">Try a different search term</p>
+              <Search size={36} className="text-ink-300 dark:text-ink-600 mx-auto mb-3" />
+              <h2 className="text-base font-semibold text-ink-600 dark:text-ink-400 mb-1">No results for "{search}"</h2>
+              <p className="text-sm text-ink-400">Try a different keyword</p>
             </div>
           )}
 
-          {/* Documents grid/list */}
+          {/* Document grid / list */}
           {loading ? (
             <SkeletonLoader type={view} count={6} />
           ) : documents.length > 0 ? (
             <>
               {view === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {documents.map((doc) => (
-                    <DocumentCard key={doc._id} document={doc} onDelete={handleDelete} view="grid" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {documents.map((doc, i) => (
+                    <DocumentCard key={doc._id} document={doc} onDelete={handleDelete} view="grid" index={i} />
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2 max-w-4xl">
-                  {documents.map((doc) => (
-                    <DocumentCard key={doc._id} document={doc} onDelete={handleDelete} view="list" />
+                <div className="space-y-1.5 max-w-3xl">
+                  {documents.map((doc, i) => (
+                    <DocumentCard key={doc._id} document={doc} onDelete={handleDelete} view="list" index={i} />
                   ))}
                 </div>
               )}
 
               {/* Infinite scroll trigger */}
               <div ref={loadMoreRef} className="flex justify-center py-8">
-                {loadingMore && (
-                  <Loader2 size={24} className="animate-spin text-primary-500" />
-                )}
+                {loadingMore && <Loader2 size={20} className="animate-spin text-primary-500" />}
                 {!hasMore && documents.length > 0 && (
-                  <p className="text-xs text-slate-400">All documents loaded</p>
+                  <p className="text-xs text-ink-400">All documents loaded</p>
                 )}
               </div>
             </>

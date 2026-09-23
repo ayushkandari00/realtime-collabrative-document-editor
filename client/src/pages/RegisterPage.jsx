@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, AtSign, MessageSquare, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, AtSign, PenLine, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -19,7 +19,7 @@ const RegisterPage = () => {
     if (!form.name.trim()) e.name = 'Name is required';
     else if (form.name.trim().length < 2) e.name = 'Min 2 characters';
     if (!form.username.trim()) e.username = 'Username is required';
-    else if (!/^[a-zA-Z0-9_]{3,20}$/.test(form.username)) e.username = '3-20 chars, letters/numbers/underscores';
+    else if (!/^[a-zA-Z0-9_]{3,20}$/.test(form.username)) e.username = '3–20 chars, letters/numbers/_';
     if (!form.email) e.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
     if (!form.password) e.password = 'Password is required';
@@ -35,7 +35,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       await register(form.name, form.email, form.password, form.username);
-      toast.success('Account created! Welcome aboard 🎉');
+      toast.success('Account created — welcome to Cowrite! 🎉');
       navigate('/');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
@@ -46,87 +46,118 @@ const RegisterPage = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/30">
-            <MessageSquare className="w-7 h-7 text-white" />
+      {/* Left — editorial accent panel */}
+      <div className="auth-panel-left">
+        <div className="relative z-10 max-w-sm text-white">
+          <div className="flex items-center gap-2.5 mb-10">
+            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
+              <PenLine size={18} className="text-white" strokeWidth={2.5} />
+            </div>
+            <span className="text-xl font-bold tracking-tight">Cowrite</span>
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Create account</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Join ChatApp and start messaging</p>
+          <h2 className="text-3xl font-bold leading-tight mb-4">
+            Start writing<br />with your team.
+          </h2>
+          <p className="text-white/60 text-base leading-relaxed">
+            Create documents, invite collaborators, and write together — in real time.
+          </p>
+          <div className="mt-10 space-y-3">
+            {['Free to get started', 'Invite unlimited collaborators', 'Autosave every 2 seconds', 'Full version history'].map((f) => (
+              <div key={f} className="flex items-center gap-2.5 text-sm text-white/70">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
+                {f}
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Full name"
-              type="text"
-              placeholder="John Doe"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              error={errors.name}
-              leftIcon={<User className="w-4 h-4" />}
-            />
-            <Input
-              label="Username"
-              type="text"
-              placeholder="johndoe"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
-              error={errors.username}
-              leftIcon={<AtSign className="w-4 h-4" />}
-            />
+      {/* Right — registration form */}
+      <div className="auth-panel-right">
+        <div className="auth-card">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
+              <PenLine size={15} className="text-white" strokeWidth={2.5} />
+            </div>
+            <span className="text-lg font-bold text-ink-900 dark:text-ink-100">Cowrite</span>
           </div>
 
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            error={errors.email}
-            leftIcon={<Mail className="w-4 h-4" />}
-            autoComplete="email"
-          />
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-ink-900 dark:text-ink-100 tracking-tight">Create account</h1>
+            <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">Join Cowrite and start writing together</p>
+          </div>
 
-          <Input
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Min 6 characters"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            error={errors.password}
-            leftIcon={<Lock className="w-4 h-4" />}
-            rightIcon={
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            }
-          />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Full name"
+                type="text"
+                placeholder="Alice Chen"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                error={errors.name}
+                leftIcon={<User className="w-4 h-4" />}
+              />
+              <Input
+                label="Username"
+                type="text"
+                placeholder="alice"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
+                error={errors.username}
+                leftIcon={<AtSign className="w-4 h-4" />}
+              />
+            </div>
 
-          <Input
-            label="Confirm password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Repeat password"
-            value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-            error={errors.confirmPassword}
-            leftIcon={<Lock className="w-4 h-4" />}
-          />
+            <Input
+              label="Email"
+              type="email"
+              placeholder="alice@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              error={errors.email}
+              leftIcon={<Mail className="w-4 h-4" />}
+              autoComplete="email"
+            />
 
-          <Button type="submit" loading={loading} size="lg" className="w-full mt-1">
-            Create Account
-          </Button>
-        </form>
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Min 6 characters"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              error={errors.password}
+              leftIcon={<Lock className="w-4 h-4" />}
+              rightIcon={
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-ink-400 hover:text-ink-600 dark:hover:text-ink-300 transition-colors">
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
+            />
 
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
-          Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
-            Sign in
-          </Link>
-        </p>
+            <Input
+              label="Confirm password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Repeat password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              error={errors.confirmPassword}
+              leftIcon={<Lock className="w-4 h-4" />}
+            />
+
+            <Button type="submit" loading={loading} size="lg" className="w-full mt-1">
+              Create Account
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-ink-500 dark:text-ink-400 mt-5">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
