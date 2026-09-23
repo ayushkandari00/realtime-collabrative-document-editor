@@ -1,7 +1,5 @@
 # CollabDocs — Real-Time Collaborative Document Editor
 
-> A production-quality Google Docs-style collaborative editor 
-
 ## ✨ Features
 
 - **Real-time collaboration** — Multiple users edit simultaneously with instant sync
